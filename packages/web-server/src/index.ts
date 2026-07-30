@@ -118,6 +118,10 @@ if (envParams.HTTP_PROXY) {
 }
 global.anylisten.config.httpProxy = global.anylisten.config.httpProxy.replace(/https?:\/\//, '')
 
+if (envParams.WEBDAV_SERVERS) {
+  global.anylisten.webdavServers = envParams.WEBDAV_SERVERS
+}
+
 console.log(`Allowed Public Paths:
   ${global.anylisten.config.allowPublicDir.join('\n  ') || '  No Paths'}
 `)

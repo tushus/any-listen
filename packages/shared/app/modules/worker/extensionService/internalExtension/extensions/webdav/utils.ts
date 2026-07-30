@@ -3,8 +3,7 @@ import { generateId, isUrl } from '@any-listen/common/utils'
 import { hostContext, logcat } from './shared'
 import type { WebDAVClientOptions } from './webdav'
 
-const getServers = async () => {
-  let config = (await hostContext.getConfigs<[string]>(['servers']))[0] || ''
+const parseServersConfig = (config: string): Array<{ url: string; username: string; password: string }> => {
   const randomStr = generateId()
   return config
     .trim()
@@ -21,6 +20,27 @@ const getServers = async () => {
         password: _password,
       }
     })
+}
+
+const getServers = async () => {
+  let config = (await hostContext.getConfigs<[string]>(['servers']))[0] || ''
+  const storedServers = parseServersConfig(config)
+
+  const envServersConfig = process.env.WEBDAV_SERVERS
+  if (envServersConfig) {
+    const envServers = parseServersConfig(envServersConfig)
+    // Merge: stored servers take precedence, append env var servers that don't exist in stored
+    for (const envServer of envServers) {
+      const exists = storedServers.some(
+        (s) => s.url === envServer.url && s.username === envServer.username
+      )
+      if (!exists) {
+        storedServers.push(envServer)
+      }
+    }
+  }
+
+  return storedServers
 }
 const saveServers = async (servers: Array<{ url: string; username: string; password: string }>) => {
   const config = servers
