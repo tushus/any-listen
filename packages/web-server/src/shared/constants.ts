@@ -9,6 +9,7 @@ export const ENV_PARAMS = [
   'ALLOW_PUBLIC_DIR',
   'EXTENSION_GH_MIRROR_HOSTS',
   'HTTP_PROXY',
+  'WEBDAV_SERVERS',
   // 'AnyListen_USER_',
 ] as const
 
