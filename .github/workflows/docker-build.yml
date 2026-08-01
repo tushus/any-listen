@@ -6,6 +6,7 @@ on:
       - main
     tags:
       - 'v*'
+  workflow_dispatch:   # 支持手动触发
 
 env:
   REGISTRY: ghcr.io
@@ -20,7 +21,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -32,7 +36,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -43,6 +47,7 @@ jobs:
             type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}
+            type=sha,prefix=sha-
 
       - name: Get commit date
         id: commit
@@ -72,7 +77,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -84,7 +92,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -93,6 +101,7 @@ jobs:
             type=raw,value=lts-slim
             type=semver,pattern={{version}},suffix=-lts-slim
             type=semver,pattern={{major}},suffix=-lts-slim
+            type=sha,prefix=sha-,suffix=-lts-slim
 
       - name: Get commit date
         id: commit
