@@ -1,23 +1,21 @@
-name: Docker Build
+name: Build and Push to GHCR
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:   # 支持手动触发
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}   # 会变成 tushus/any-listen
 
 jobs:
-  build-alpine:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      packages: write   # 必须有，才能推到 Packages
 
     steps:
       - name: Checkout
@@ -29,7 +27,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -42,18 +40,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=alpine
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}
             type=sha,prefix=sha-
 
-      - name: Get commit date
-        id: commit
-        run: echo "date=$(git log -1 --format=%cI ${{ github.sha }})" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push (Alpine)
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -62,63 +53,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            IS_CI=true
-            GIT_COMMIT_ID=${{ github.sha }}
-            GIT_COMMIT_DATE=${{ steps.commit.outputs.date }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  build-lts-slim:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=lts-slim
-            type=semver,pattern={{version}},suffix=-lts-slim
-            type=semver,pattern={{major}},suffix=-lts-slim
-            type=sha,prefix=sha-,suffix=-lts-slim
-
-      - name: Get commit date
-        id: commit
-        run: echo "date=$(git log -1 --format=%cI ${{ github.sha }})" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push (LTS Slim)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.lts-slim
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            IS_CI=true
-            GIT_COMMIT_ID=${{ github.sha }}
-            GIT_COMMIT_DATE=${{ steps.commit.outputs.date }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
