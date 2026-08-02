@@ -2,6 +2,7 @@ import './shared/error'
 import { appState, initAppEnv, sendInitedEvent } from '@/app/app'
 import { appLog } from '@/shared/log4js'
 
+import { configureWebDAVFromEnv } from './modules/extension/webdavEnv'
 import { initI18n } from './i18n'
 import { initModules } from './modules'
 import { initRenderers } from './renderer'
@@ -16,6 +17,8 @@ export const initApp = async () => {
   await startCommonWorkers(appState.dataPath)
   void startExtensionServiceWorker()
   await initModules()
+  // 此时扩展已加载、musicList 模块与列表 db 已就绪，自动配置 WEBDAV_SERVERS
+  void configureWebDAVFromEnv().catch((error) => appLog.error('WEBDAV_SERVERS configuration failed', error))
   await initRenderers()
 
   sendInitedEvent()
