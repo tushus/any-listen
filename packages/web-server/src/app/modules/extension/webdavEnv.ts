@@ -72,7 +72,8 @@ const serializeServers = (servers: Array<{ url: string; username: string; passwo
 
 /** Write the extension's persisted `servers` setting (the same key getServers reads). */
 const saveEnvServers = async (entries: EnvEntry[]) => {
-  const [stored] = (await workers.extensionService.getExtensionConfigValues(WEBDAV_EXTENSION_ID, ['servers'])) as unknown as [string]
+  const values = (await workers.extensionService.getExtensionConfigValues(WEBDAV_EXTENSION_ID, ['servers'])) as { servers?: string }
+  const stored = values.servers ?? ''
   const servers = parseStoredServers(stored)
   let added = 0
   let updated = 0
