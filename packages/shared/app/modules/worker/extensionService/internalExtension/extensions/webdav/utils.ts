@@ -3,7 +3,9 @@ import { generateId, isUrl } from '@any-listen/common/utils'
 import { hostContext, logcat } from './shared'
 import type { WebDAVClientOptions } from './webdav'
 
-const parseServersConfig = (config: string): Array<{ url: string; username: string; password: string }> => {
+export type WebDAVServerConfig = { url: string; username: string; password: string }
+
+export const parseServersConfig = (config: string): WebDAVServerConfig[] => {
   const randomStr = generateId()
   return config
     .trim()
@@ -42,7 +44,7 @@ const getServers = async () => {
 
   return storedServers
 }
-const saveServers = async (servers: Array<{ url: string; username: string; password: string }>) => {
+export const saveServers = async (servers: WebDAVServerConfig[]) => {
   const config = servers
     .map((server) => {
       const url = server.url.replaceAll(',', '\\,')

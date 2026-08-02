@@ -1,4 +1,5 @@
 import { extensionEvent, extensionState, initExtensionModule } from '@any-listen/app/modules/extension'
+import { configureWebDAVFromEnv } from './webdavEnv'
 import { musicListEvent } from '@any-listen/app/modules/musicList'
 import { workers } from '@any-listen/app/modules/worker'
 import { DEFAULT_LANG, EXTENSION, STORE_NAMES } from '@any-listen/common/constants'
@@ -44,6 +45,8 @@ const setupExtension = async () => {
   await workers.extensionService.loadLocalExtensions()
   await workers.extensionService.startExtensions()
   extensionEvent.setup(workers.extensionService)
+  // The extension host and list database are ready only after startup above.
+  void configureWebDAVFromEnv().catch((error) => extensionLog.error('WebDAV environment configuration failed', error))
 }
 export const initExtension = async () => {
   extensionState.extensionDir = joinPath(appState.dataPath, STORE_NAMES.EXTENSION)
