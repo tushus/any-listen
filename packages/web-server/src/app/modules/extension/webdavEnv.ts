@@ -2,8 +2,10 @@ import { generateId, isUrl } from '@any-listen/common/utils'
 import { getAllUserLists, musicListEvent } from '@any-listen/app/modules/musicList'
 
 import { workers } from '@/app/worker'
+import { nodeProcess } from '@/shared/utils'
 
 const LOG_PREFIX = '[WEBDAV_SERVERS]'
+const WEBDAV_SERVERS_ENV_KEY = 'WEBDAV_SERVERS'
 const WEBDAV_EXTENSION_ID = 'internal.webdav'
 const WEBDAV_SOURCE = 'webdav'
 
@@ -154,7 +156,7 @@ const createRemoteLists = async (entries: EnvEntry[]) => {
 
 /** Runs after DB, extension host, and music-list initialization. Never blocks app startup. */
 export const configureWebDAVFromEnv = async () => {
-  const raw = process.env.WEBDAV_SERVERS?.trim()
+  const raw = nodeProcess.env[WEBDAV_SERVERS_ENV_KEY]?.trim()
   if (!raw) return
   try {
     const { entries, invalid } = parseEnvEntries(raw)
