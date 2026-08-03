@@ -15,10 +15,11 @@ export const initApp = async () => {
   await initAppEnv()
   initI18n()
   await startCommonWorkers(appState.dataPath)
-  void startExtensionServiceWorker()
+  // Wait for the extension worker handshake before modules call extension APIs.
+  await startExtensionServiceWorker()
   await initModules()
-  // 此时扩展已加载、musicList 模块与列表 db 已就绪，自动配置 WEBDAV_SERVERS
-  void configureWebDAVFromEnv().catch((error) => appLog.error('WEBDAV_SERVERS configuration failed', error))
+  // DB, extension host, and musicList are ready here. Configuration is best-effort.
+  void configureWebDAVFromEnv().catch((error) => appLog.error('[WEBDAV_SERVERS] configuration failed (startup continues)', error))
   await initRenderers()
 
   sendInitedEvent()
