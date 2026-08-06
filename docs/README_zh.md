@@ -94,6 +94,7 @@
 |         `LOG_PATH`          | 日志存储路径，默认 `./data/logs`                                                         |
 | `EXTENSION_GH_MIRROR_HOSTS` | 扩展商店 Github 镜像地址，多个地址用英文逗号分隔                                         |
 |        `HTTP_PROXY`         | 代理服务器，例子 `127.0.0.1:2080`                                                        |
+|      `WEBDAV_SERVERS`       | WebDAV 服务器自动配置，格式见 [WEBDAV_SERVERS.md](./WEBDAV_SERVERS.md)                   |
 
 ### 源码编译
 
