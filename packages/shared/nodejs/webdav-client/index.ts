@@ -73,6 +73,24 @@ const buildFileItems = (list: LsResp[], path: string): WebDAVItem[] => {
     return file
   })
 }
+/**
+ * Normalize a WebDAV path into the RFC 3986 encoded form before it is put into a request URL.
+ * Some servers return hrefs with raw `,`/`&`/space (unencoded), which makes the request URL ambiguous
+ * (`&` looks like a query separator to gateways/proxies) and makes those files fail to load.
+ * Already-encoded paths are decoded per segment and re-encoded, so this is idempotent.
+ */
+const normalizePath = (path: string): string =>
+  path
+    .split('/')
+    .map((segment) => {
+      let decoded = segment
+      try {
+        decoded = decodeURIComponent(segment)
+      } catch {}
+      return encodeURIComponent(decoded)
+    })
+    .join('/')
+
 const buildError = (url: string, statusCode?: number, error?: string) => {
   return new Error(`${statusCode}${error ? `, ${error}` : ''} [${url}]`)
 }
@@ -138,7 +156,7 @@ export class WebDAVClient {
   ) {
     const headers = options.headers || {}
     if (this.authHeader) headers.Authorization = this.authHeader
-    const url = this.getFullUrl(path)
+    const url = this.getFullUrl(path == null ? path : normalizePath(path))
     this.options.onDebugLog?.(`request: [${method} ${url}]`)
     const res = await request<string>(url, {
       method,
@@ -177,7 +195,7 @@ export class WebDAVClient {
 
   getRequestOptions(path: string, method: Options['method'] = 'GET'): [string, Options] {
     this.options.onDebugLog?.(`getRequestOptions: [${path}]`)
-    const url = this.getFullUrl(path)
+    const url = this.getFullUrl(normalizePath(path))
     return [
       url,
       {
