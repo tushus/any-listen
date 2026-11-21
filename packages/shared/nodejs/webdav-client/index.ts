@@ -32,12 +32,26 @@ export interface WebDAVFileItem {
 }
 export type WebDAVItem = WebDAVDirItem | WebDAVFileItem
 
+/**
+ * Decode an href/name segment without ever throwing.
+ * Servers may return hrefs with a raw `%` (e.g. `100%.mp3`), which makes `decodeURIComponent` throw
+ * `URIError: URI malformed`. Letting that escape would fail the whole directory listing, so fall back
+ * to the original string and let the single file be handled (or fail) on its own.
+ */
+const safeDecode = (value: string): string => {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 const buildFileItems = (list: LsResp[], path: string): WebDAVItem[] => {
   return list.map((item) => {
     const isDir = item.propstat.prop.resourcetype?.collection === ''
     let rawName = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href
     rawName = rawName.substring(rawName.lastIndexOf('/') + 1)
-    const name = decodeURIComponent(rawName)
+    const name = safeDecode(rawName)
 
     // let rawName: string
     // let name: string
@@ -82,13 +96,7 @@ const buildFileItems = (list: LsResp[], path: string): WebDAVItem[] => {
 const normalizePath = (path: string): string =>
   path
     .split('/')
-    .map((segment) => {
-      let decoded = segment
-      try {
-        decoded = decodeURIComponent(segment)
-      } catch {}
-      return encodeURIComponent(decoded)
-    })
+    .map((segment) => encodeURIComponent(safeDecode(segment)))
     .join('/')
 
 const buildError = (url: string, statusCode?: number, error?: string) => {
