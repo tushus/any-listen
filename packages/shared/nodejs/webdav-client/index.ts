@@ -99,6 +99,19 @@ const normalizePath = (path: string): string =>
     .map((segment) => encodeURIComponent(safeDecode(segment)))
     .join('/')
 
+/**
+ * Some servers (or the reverse proxy in front of them) return absolute hrefs that carry their own
+ * host/scheme, which never matches our baseUrl; only the path part is comparable with our own URL.
+ */
+const getHrefPath = (href: string) => {
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(href)) return href
+  try {
+    return new URL(href).pathname
+  } catch {
+    return href
+  }
+}
+
 const buildError = (url: string, statusCode?: number, error?: string) => {
   return new Error(`${statusCode}${error ? `, ${error}` : ''} [${url}]`)
 }
@@ -230,7 +243,7 @@ export class WebDAVClient {
       const isDir = item.propstat.prop.resourcetype?.collection === ''
       if (!isDir) return true
       const href = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href
-      return !currentFullPath.endsWith(href)
+      return !currentFullPath.endsWith(getHrefPath(href))
     })
     return buildFileItems(responses, basePath)
   }
