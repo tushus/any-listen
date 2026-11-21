@@ -220,7 +220,10 @@ export class WebDAVClient {
     if (!path.startsWith('/')) path = `/${path}`
     const res = await this.request<Ls>('PROPFIND', { headers: { Depth: '1' }, path })
     // console.log(JSON.stringify(res.multistatus.response))
-    const currentFullPath = this.getFullUrl(path)
+    // Collapse duplicate slashes and drop the trailing slash before building item paths, otherwise a
+    // directory configured as `/music/` produces `/music//a.mp3` for every item, which many servers answer with 404
+    const basePath = path.replace(/\/{2,}/g, '/').replace(/\/+$/, '')
+    const currentFullPath = this.getFullUrl(basePath)
     // console.log('res.multistatus.response', res.multistatus.response)
     // filter out the current directory itself from the list
     const responses = res.multistatus.response.filter((item) => {
@@ -229,7 +232,7 @@ export class WebDAVClient {
       const href = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href
       return !currentFullPath.endsWith(href)
     })
-    return buildFileItems(responses, path == '/' ? '' : path)
+    return buildFileItems(responses, basePath)
   }
 
   async rm(path: string) {
