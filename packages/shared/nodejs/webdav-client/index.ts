@@ -99,6 +99,19 @@ const normalizePath = (path: string): string =>
     .map((segment) => encodeURIComponent(safeDecode(segment)))
     .join('/')
 
+/**
+ * Some servers (or the reverse proxy in front of them) return absolute hrefs that carry their own
+ * host/scheme, which never matches our baseUrl; only the path part is comparable with our own URL.
+ */
+const getHrefPath = (href: string) => {
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(href)) return href
+  try {
+    return new URL(href).pathname
+  } catch {
+    return href
+  }
+}
+
 const buildError = (url: string, statusCode?: number, error?: string) => {
   return new Error(`${statusCode}${error ? `, ${error}` : ''} [${url}]`)
 }
@@ -220,16 +233,19 @@ export class WebDAVClient {
     if (!path.startsWith('/')) path = `/${path}`
     const res = await this.request<Ls>('PROPFIND', { headers: { Depth: '1' }, path })
     // console.log(JSON.stringify(res.multistatus.response))
-    const currentFullPath = this.getFullUrl(path)
+    // Collapse duplicate slashes and drop the trailing slash before building item paths, otherwise a
+    // directory configured as `/music/` produces `/music//a.mp3` for every item, which many servers answer with 404
+    const basePath = path.replace(/\/{2,}/g, '/').replace(/\/+$/, '')
+    const currentFullPath = this.getFullUrl(basePath)
     // console.log('res.multistatus.response', res.multistatus.response)
     // filter out the current directory itself from the list
     const responses = res.multistatus.response.filter((item) => {
       const isDir = item.propstat.prop.resourcetype?.collection === ''
       if (!isDir) return true
       const href = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href
-      return !currentFullPath.endsWith(href)
+      return !currentFullPath.endsWith(getHrefPath(href))
     })
-    return buildFileItems(responses, path == '/' ? '' : path)
+    return buildFileItems(responses, basePath)
   }
 
   async rm(path: string) {
